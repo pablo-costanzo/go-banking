@@ -1,0 +1,46 @@
+version: '3.7'
+services:
+  mysql:
+    image: mysql:8
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - mysqldata:/var/lib/mysql
+      - ./initdb:/docker-entrypoint-initdb.d  
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: codecamp
+      TZ: America/Argentina/Buenos_Aires
+      MYSQL_ROOT_HOST: "%"  # Considerar restringir esto en entornos de producción
+      MYSQL_DATABASE: "banking"
+      MYSQL_LOG_CONSOLE: "true"
+      MYSQL_SSL_CA: "/etc/mysql/certs/ca.pem"
+      MYSQL_SSL_CERT: "/etc/mysql/certs/server-cert.pem"
+      MYSQL_SSL_KEY: "/etc/mysql/certs/server-key.pem"
+      MYSQL_SSL_CIPHER: "AES256-SHA"
+      MYSQL_CHARACTER_SET_SERVER: "utf8mb4"
+      MYSQL_COLLATION_SERVER: "utf8mb4_unicode_ci"
+      MYSQL_INIT_CONNECT: "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci"
+      MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL: "1"
+
+  go_app:
+    build:
+      context: ../../
+      dockerfile: resources/docker/Dockerfile
+    container_name: go_app
+    depends_on:
+      - mysql
+    ports:
+      - "8000:8000"
+    environment:
+      SERVER_ADDRESS: "0.0.0.0"  # Se usa 0.0.0.0 para que el servidor escuche en todas las interfaces
+      SERVER_PORT: "8000"
+      DB_USER: "root"
+      DB_PASSWD: "codecamp"
+      DB_ADDR: "mysql"  # Se usa el nombre del servicio para la dirección de la base de datos
+      DB_PORT: "3306"
+      DB_NAME: "banking"
+
+volumes:
+  mysqldata:
+    driver: local
